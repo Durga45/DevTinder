@@ -20,7 +20,7 @@ const userSchema = new Schema(
       required: true,
       lowercase: true,
       trim: true,
-      unique: true,  // Ensures no duplicate emails
+      unique: true, // Ensures no duplicate emails
       match: [
         /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/,
         "Please fill a valid email address",
@@ -64,6 +64,13 @@ const userSchema = new Schema(
     timestamps: true,
   }
 );
+
+// Indexing for performance improvements
+
+userSchema.index({ firstName: 1, lastName: 1 }); // Compound index for searching by first and last name
+
+// Optional: Index for age if you frequently query users by age
+userSchema.index({ age: 1 });
 
 const User = mongoose.model("User", userSchema);
 
