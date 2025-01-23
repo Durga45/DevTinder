@@ -58,5 +58,42 @@ userRouter.get("/user/connections", middlewareAuth, async (req, res) => {
   }
 });
 
+userRouter.get("/feed", middlewareAuth, async (req, res) => {
+  try {
+    const loggedInUser = req.userid;
+    
+    // Get the page and limit from query parameters (default to page 1 and 10 results per page if not provided)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const connectionRequest = await connectionRequestModel.find({
+      $or: [
+        { fromUserId: loggedInUser },
+        { toUserId: loggedInUser }
+      ]
+    }).select("fromUserId toUserId");
+
+    const hideUserFromFeed = new Set();
+    connectionRequest.forEach(req => {
+      hideUserFromFeed.add(req.fromUserId.toString());
+      hideUserFromFeed.add(req.toUserId.toString());
+    });
+
+    // Use pagination with skip and limit
+    const users = await User.find({
+      $and: [
+        { _id: { $nin: Array.from(hideUserFromFeed) } },
+        { _id: { $ne: loggedInUser } }
+      ]
+    })
+    .select("firstName lastName photoUrl age gender about skills")
+    .skip((page - 1) * limit)  // Skip the records for the current page
+    .limit(limit);  // Limit the number of records to the specified page size
+
+    res.status(200).send(users);
+  } catch (err) {
+    res.status(400).send({ message: err.message });
+  }
+});
 
 export default userRouter;
